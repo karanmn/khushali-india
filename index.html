@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Khushali Chemicals - Pan-India Delivery Network</title>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --panel-bg: #1e293b;
+      --card-bg: #334155;
+      --card-hover: #475569;
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.35);
+      --hq-color: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg-dark);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Header */
+    .header {
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      z-index: 1000;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-badge {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    .brand span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .stat-pill {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .stat-pill strong {
+      color: var(--accent);
+      font-size: 0.95rem;
+      margin-right: 4px;
+    }
+
+    .btn-toggle {
+      background: var(--accent);
+      color: #06281e;
+      border: none;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-toggle:hover {
+      opacity: 0.9;
+    }
+
+    /* Main Layout */
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar Panel */
+    .sidebar {
+      width: 390px;
+      background: var(--panel-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 500;
+    }
+
+    .filters {
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .search-input, .state-select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .search-input:focus, .state-select:focus {
+      border-color: var(--accent);
+    }
+
+    .entries-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .entry-card {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 13px;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .entry-card:hover, .entry-card.active {
+      border-color: var(--accent);
+      background: rgba(16, 185, 129, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .entry-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .firm-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: var(--text-main);
+    }
+
+    .state-tag {
+      font-size: 0.7rem;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .customer-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .entry-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.76rem;
+      color: #cbd5e1;
+    }
+
+    .transport-badge {
+      background: #334155;
+      color: #e2e8f0;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+    }
+
+    /* Map Container */
+    #map {
+      flex: 1;
+      height: 100%;
+      background: #0b1120;
+    }
+
+    /* Custom Marker Styles */
+    .delivery-pin {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    .hq-pin {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--hq-color);
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 16px var(--hq-color);
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 10px;
+    }
+
+    .leaflet-popup-tip {
+      background: #1e293b;
+    }
+
+    @media (max-width: 768px) {
+      .main-container {
+        flex-direction: column-reverse;
+      }
+      .sidebar {
+        width: 100%;
+        height: 46%;
+      }
+      #map {
+        height: 54%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="brand">
+      <div class="brand-badge"></div>
+      <div>
+        <h1>KHUSHALI CHEMICALS — INDIA SUPPLY NETWORK</h1>
+        <span>Dispatch Hub: Jaipur, Rajasthan | Pan-India Client Footprint</span>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-pill"><strong id="totalCount">97</strong>Total Entries</div>
+      <div class="stat-pill"><strong id="stateCount">18</strong>States Reached</div>
+      <button class="btn-toggle" id="toggleLinesBtn" onclick="toggleSupplyLines()">Hide Supply Lines</button>
+      <button class="btn-toggle" style="background:#3b82f6;color:#fff;" onclick="resetMapView()">Reset Map</button>
+    </div>
+  </header>
+
+  <div class="main-container">
+    <aside class="sidebar">
+      <div class="filters">
+        <input
+          type="text"
+          id="searchInput"
+          class="search-input"
+          placeholder="Search customer, firm, city, pincode, transport..."
+          oninput="filterEntries()"
+        />
+        <select id="stateSelect" class="state-select" onchange="filterEntries()">
+          <option value="ALL">All States & UTs (97 Entries)</option>
+        </select>
+      </div>
+      <div class="entries-list" id="entriesList"></div>
+    </aside>
+
+    <div id="map"></div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // HQ Coordinates (Jaipur, Rajasthan)
+    const JAIPUR_HQ = { lat: 26.9124, lng: 75.7873, name: "Khushali Chemicals HQ (Jaipur)" };
+
+    // All 97 Entries from CUSTOMER ADHAAR/G.S.T LIST
+    const deliveries = [
+      { id: 1, customer: "Deepika customer", firm: "Shiv shakti enterprises", transport: "Gatimaaan", rawLocation: "343029 Bhinmal", city: "Bhinmal", state: "Rajasthan", lat: 25.0016, lng: 72.2618 },
+      { id: 2, customer: "Muzammil ansari", firm: "Mr.perfect", transport: "VRL", rawLocation: "421302, Thane, Maharashtra", city: "Thane (Bhiwandi)", state: "Maharashtra", lat: 19.2967, lng: 73.0631 },
+      { id: 3, customer: "Vishu sharma", firm: "Vishay sharma", transport: "VRL", rawLocation: "110052", city: "Wazirpur, New Delhi", state: "Delhi", lat: 28.6980, lng: 77.1650 },
+      { id: 4, customer: "Anuj giri", firm: "Anuj giri", transport: "", rawLocation: "483770, katni, mp", city: "Katni", state: "Madhya Pradesh", lat: 23.8343, lng: 80.3894 },
+      { id: 5, customer: "Arman khokhar", firm: "Rehan", transport: "Ambey goods", rawLocation: "306401, marwar, pali", city: "Pali (Marwar)", state: "Rajasthan", lat: 25.7711, lng: 73.3234 },
+      { id: 6, customer: "Harshit yadav", firm: "Harshit yadav", transport: "", rawLocation: "301028, alwar", city: "Alwar", state: "Rajasthan", lat: 27.5530, lng: 76.6346 },
+      { id: 7, customer: "Sunny saraswat", firm: "Sunny saraswat", transport: "", rawLocation: "202001, alighar, up", city: "Aligarh", state: "Uttar Pradesh", lat: 27.8974, lng: 78.0880 },
+      { id: 8, customer: "Vikas patel", firm: "Vikas patel", transport: "", rawLocation: "451001, khargone, mp", city: "Khargone", state: "Madhya Pradesh", lat: 21.8245, lng: 75.6102 },
+      { id: 9, customer: "Iram & alhua", firm: "IRAM & ALI-UN ENTERPRISE INDIA", transport: "", rawLocation: "481880, dindori, jabalpur, mp", city: "Dindori (Jabalpur)", state: "Madhya Pradesh", lat: 22.9422, lng: 81.0767 },
+      { id: 10, customer: "Vinish bhatt", firm: "Vinish bhatt", transport: "", rawLocation: "251309, muzaffarnagar, up", city: "Muzaffarnagar", state: "Uttar Pradesh", lat: 29.4727, lng: 77.7085 },
+      { id: 11, customer: "Mohit shalik tulavi", firm: "Mohit shalik tulavi", transport: "", rawLocation: "441209, maharashtra", city: "Bramhapuri (Chandrapur)", state: "Maharashtra", lat: 20.6122, lng: 79.8587 },
+      { id: 12, customer: "Ankit prasad joshi", firm: "Ankit prasad joshi", transport: "", rawLocation: "248008, dehradun", city: "Dehradun", state: "Uttarakhand", lat: 30.3165, lng: 78.0322 },
+      { id: 13, customer: "Prabhat ashok gehlot", firm: "Prabhat ashok gehlot", transport: "", rawLocation: "473001, guna, mp", city: "Guna", state: "Madhya Pradesh", lat: 24.6470, lng: 77.3117 },
+      { id: 14, customer: "BHUPENDRA DEVIDAS", firm: "LAKSHIT ENTERPRISES", transport: "", rawLocation: "425412, MAHARASTRA", city: "Nandurbar", state: "Maharashtra", lat: 21.3702, lng: 74.2409 },
+      { id: 15, customer: "VIKRAM JANA", firm: "VIKRAM JANA", transport: "", rawLocation: "281121, SEVAKUNJ, VRINDAVAN U.P", city: "Vrindavan", state: "Uttar Pradesh", lat: 27.5806, lng: 77.7006 },
+      { id: 16, customer: "AFTAB ALAM", firm: "AFTAB ALAM", transport: "", rawLocation: "110025, okhla new delhi", city: "Okhla, New Delhi", state: "Delhi", lat: 28.5626, lng: 77.2814 },
+      { id: 17, customer: "HOME DELIGHT INDIA", firm: "HOME DELIGHT INDIA", transport: "", rawLocation: "497001, ambikapur, chhattisghar", city: "Ambikapur", state: "Chhattisgarh", lat: 23.1186, lng: 83.1986 },
+      { id: 18, customer: "shivlal ji", firm: "BHERUNATH COLLECTION", transport: "", rawLocation: "313334, Kelwa, rajsamand", city: "Kelwa (Rajsamand)", state: "Rajasthan", lat: 25.1460, lng: 73.8447 },
+      { id: 19, customer: "pinki malik", firm: "pinki malik", transport: "", rawLocation: "700100, hawda west bangal", city: "Howrah", state: "West Bengal", lat: 22.5892, lng: 88.3104 },
+      { id: 20, customer: "krish guleriya", firm: "krish guleriya", transport: "", rawLocation: "176102, kangra palampur, HP", city: "Palampur (Kangra)", state: "Himachal Pradesh", lat: 32.1109, lng: 76.5363 },
+      { id: 21, customer: "I SOLUTION", firm: "I SOLUTION", transport: "", rawLocation: "133001, ambala, haryana", city: "Ambala", state: "Haryana", lat: 30.3782, lng: 76.7767 },
+      { id: 22, customer: "RITIK DEVRA", firm: "RITIK DEVRA", transport: "", rawLocation: "341001, NAGOUR, RAJ.", city: "Nagaur", state: "Rajasthan", lat: 27.2020, lng: 73.7339 },
+      { id: 23, customer: "ANKIT KUMAR", firm: "ANKIT KUMAR", transport: "", rawLocation: "JHUNJHNU", city: "Jhunjhunu", state: "Rajasthan", lat: 28.1289, lng: 75.3995 },
+      { id: 24, customer: "SINKU THAKUR", firm: "SEFEXON CHEMICAL", transport: "", rawLocation: "284201, JHANSI UP", city: "Jhansi (Mauranipur)", state: "Uttar Pradesh", lat: 25.4484, lng: 78.5685 },
+      { id: 25, customer: "UNIVERSAL EXPORTS", firm: "UNIVERSAL EXPORTS", transport: "", rawLocation: "421103", city: "Kalyan (Thane)", state: "Maharashtra", lat: 19.2403, lng: 73.1305 },
+      { id: 26, customer: "ABHISHEK", firm: "ABHISHEK", transport: "", rawLocation: "452010, M.P", city: "Indore", state: "Madhya Pradesh", lat: 22.7533, lng: 75.8937 },
+      { id: 27, customer: "OAMAR AHMAD", firm: "OAMAR AHMAD", transport: "", rawLocation: "110096, old kondali new delhi", city: "Old Kondli, New Delhi", state: "Delhi", lat: 28.6139, lng: 77.3340 },
+      { id: 28, customer: "JAI JAWALA ENTERPRIES", firm: "JAI JAWALA ENTERPRIES", transport: "PORTER", rawLocation: "BAMBALA JAIPUR", city: "Bambala, Jaipur", state: "Rajasthan", lat: 26.7915, lng: 75.8235 },
+      { id: 29, customer: "RISHAV KUMAR", firm: "RISHAV KUMAR", transport: "AZAD TRANSPORT", rawLocation: "852113, madepura, bihar", city: "Madhepura", state: "Bihar", lat: 25.9218, lng: 86.7946 },
+      { id: 30, customer: "CLEAN EXPERT", firm: "CLEAN EXPERT", transport: "", rawLocation: "831001, jamshedpur, jharkhand", city: "Jamshedpur", state: "Jharkhand", lat: 22.8046, lng: 86.2029 },
+      { id: 31, customer: "BAIDYANATH GUIN", firm: "BAIDYANATH GUIN", transport: "", rawLocation: "WEST BANGAL", city: "West Bengal", state: "West Bengal", lat: 23.2324, lng: 87.8615 },
+      { id: 32, customer: "NIKHIL PANDEY", firm: "NIKHIL PANDEY", transport: "", rawLocation: "394230, SURAT, GUJRAT", city: "Surat (Sachin)", state: "Gujarat", lat: 21.0858, lng: 72.8825 },
+      { id: 33, customer: "MOHD ADIL", firm: "MOHD ADIL", transport: "", rawLocation: "228001, sultanpur, up", city: "Sultanpur", state: "Uttar Pradesh", lat: 26.2648, lng: 82.0727 },
+      { id: 34, customer: "AMBIKA HARDWARE STORE", firm: "AMBIKA HARDWARE STORE", transport: "", rawLocation: "262122, PURANPUR, UP", city: "Puranpur (Pilibhit)", state: "Uttar Pradesh", lat: 28.5146, lng: 80.1481 },
+      { id: 35, customer: "PARAS YADAV", firm: "PARAS YADAV", transport: "", rawLocation: "244251, UP", city: "Amroha", state: "Uttar Pradesh", lat: 28.7844, lng: 78.2570 },
+      { id: 36, customer: "SHIVAM SINGH YADAV", firm: "SHIVAM SINGH YADAV", transport: "", rawLocation: "122001, GURUGRAM, H.R", city: "Gurugram", state: "Haryana", lat: 28.4595, lng: 77.0266 },
+      { id: 37, customer: "PUSHPENDRA KAUSHIK", firm: "PUSHPENDRA KAUSHIK", transport: "", rawLocation: "121004, FARIDABAD, H.R", city: "Faridabad", state: "Haryana", lat: 28.3670, lng: 77.3155 },
+      { id: 38, customer: "SYED MUMTAZ AHMED", firm: "SYED MUMTAZ AHMED", transport: "", rawLocation: "243005, OLD CITY BREILLY UP", city: "Bareilly", state: "Uttar Pradesh", lat: 28.3670, lng: 79.4304 },
+      { id: 39, customer: "SYED YUNUS", firm: "SYED YUNUS", transport: "", rawLocation: "577221, NALLUR CAMP, KARNATAKA", city: "Nallur Camp (Davanagere)", state: "Karnataka", lat: 14.0222, lng: 75.9258 },
+      { id: 40, customer: "GAURAV KUMAR", firm: "GAURAV KUMAR", transport: "", rawLocation: "262307, udham singh nagar, UK", city: "Udham Singh Nagar", state: "Uttarakhand", lat: 28.9216, lng: 79.9708 },
+      { id: 41, customer: "MD.SAJID RAJA", firm: "MD.SAJID RAJA", transport: "", rawLocation: "844101, HAJIPUR, BIHAR", city: "Hajipur", state: "Bihar", lat: 25.6892, lng: 85.2140 },
+      { id: 42, customer: "JASWANT PRASAD KAHAR", firm: "JASWANT PRASAD KAHAR", transport: "", rawLocation: "854105, KATIHAR, BIHAR", city: "Katihar", state: "Bihar", lat: 25.5435, lng: 87.5678 },
+      { id: 43, customer: "SAMEER", firm: "MOHAMMAED ALI", transport: "", rawLocation: "341303, DIDWANA, RAJ.", city: "Didwana", state: "Rajasthan", lat: 27.4005, lng: 74.5736 },
+      { id: 44, customer: "PIYUSH GT", firm: "NEO WASH", transport: "", rawLocation: "JAIPUR", city: "Jaipur", state: "Rajasthan", lat: 26.9220, lng: 75.8020 },
+      { id: 45, customer: "MO. ZAYAD", firm: "MO. ZAYAD", transport: "", rawLocation: "262702, LAKHIMPUR, KHERI, UP", city: "Lakhimpur Kheri", state: "Uttar Pradesh", lat: 27.9462, lng: 80.7787 },
+      { id: 46, customer: "AYUSH CHOUHAN", firm: "AYUSH CHOUHAN", transport: "", rawLocation: "205001, MAIPURI, UP", city: "Mainpuri", state: "Uttar Pradesh", lat: 27.2285, lng: 79.0252 },
+      { id: 47, customer: "ISHIKA ENTERPRISES", firm: "ISHIKA ENTERPRISES", transport: "", rawLocation: "AGRA UP", city: "Agra", state: "Uttar Pradesh", lat: 27.1767, lng: 78.0081 },
+      { id: 48, customer: "SHAIKH MUSAIB SHAIKH SAKILODDIN", firm: "SHAIKH MUSAIB SHAIKH SAKILODDIN", transport: "", rawLocation: "445001, VAVATMAL", city: "Yavatmal", state: "Maharashtra", lat: 20.3888, lng: 78.1204 },
+      { id: 49, customer: "MJHUBODISHA", firm: "MJHUBODISHA", transport: "", rawLocation: "753001, ODISHA", city: "Cuttack", state: "Odisha", lat: 20.4625, lng: 85.8830 },
+      { id: 50, customer: "DIVYANSHU KUMAR", firm: "DIVYANSHU KUMAR", transport: "", rawLocation: "848103, SAMASTIPUR, BIHAR", city: "Samastipur", state: "Bihar", lat: 25.8629, lng: 85.7810 },
+      { id: 51, customer: "SUNIL", firm: "SUNIL", transport: "", rawLocation: "GURGAON, HARYANA", city: "Gurugram", state: "Haryana", lat: 28.4695, lng: 77.0366 },
+      { id: 52, customer: "VISHAL TRADER", firm: "VISHAL TRADER", transport: "", rawLocation: "202001, ALIGHAR, UP", city: "Aligarh", state: "Uttar Pradesh", lat: 27.8874, lng: 78.0780 },
+      { id: 53, customer: "JIGAR KUMAR", firm: "JIGAR KUMAR", transport: "", rawLocation: "824103, AURANGABAD, BIHAR", city: "Aurangabad (Bihar)", state: "Bihar", lat: 24.7520, lng: 84.3742 },
+      { id: 54, customer: "LOKESH KUMAR", firm: "LOKESH KUMAR", transport: "", rawLocation: "121004, FARIDABAD, HARYANA", city: "Faridabad", state: "Haryana", lat: 28.3770, lng: 77.3255 },
+      { id: 55, customer: "RAVI YADAV ENTERPRISES", firm: "RAVI YADAV ENTERPRISES", transport: "", rawLocation: "243003, BAREILLY, UP", city: "Bareilly", state: "Uttar Pradesh", lat: 28.3870, lng: 79.4104 },
+      { id: 56, customer: "IBRAHIM D SHEKH", firm: "IBRAHIM D SHEKH", transport: "", rawLocation: "585223, YADGIR, KARNATAKA", city: "Yadgir", state: "Karnataka", lat: 16.7700, lng: 77.1376 },
+      { id: 57, customer: "PRIYANSHU SINGH CHOUHAN", firm: "PRIYANSHU SINGH CHOUHAN", transport: "", rawLocation: "455001, DEWAS, RASULPUR", city: "Dewas (Rasulpur)", state: "Madhya Pradesh", lat: 22.9676, lng: 76.0534 },
+      { id: 58, customer: "SHAMS RAZA", firm: "SHAMS RAZA", transport: "", rawLocation: "713339, jamuria, asanshol, WB", city: "Jamuria (Asansol)", state: "West Bengal", lat: 23.7022, lng: 87.0781 },
+      { id: 59, customer: "MAYUR RAJENDRA SONAR", firm: "MAYUR RAJENDRA SONAR", transport: "", rawLocation: "422007, NASIK, MHARASTRA", city: "Nashik", state: "Maharashtra", lat: 19.9975, lng: 73.7498 },
+      { id: 60, customer: "HITENDRA SINHA", firm: "HITENDRA SINHA", transport: "", rawLocation: "493663, DHAMTARI, CHATTISGARH", city: "Dhamtari", state: "Chhattisgarh", lat: 20.8315, lng: 81.7081 },
+      { id: 61, customer: "VIJAY KUMAR PANDEY", firm: "VIJAY KUMAR PANDEY", transport: "", rawLocation: "201006, SAHIBABAD, DELHI", city: "Sahibabad (NCR)", state: "Uttar Pradesh", lat: 28.6754, lng: 77.3598 },
+      { id: 62, customer: "MICHEAL BHIKU PANDEY", firm: "MICHEAL BHIKU PANDEY", transport: "", rawLocation: "401208, MAHARASTRA", city: "Vasai (Palghar)", state: "Maharashtra", lat: 19.4063, lng: 72.8631 },
+      { id: 63, customer: "LOKESH KUMAR", firm: "LOKESH KUMAR", transport: "", rawLocation: "176601, UNA, H.P", city: "Una", state: "Himachal Pradesh", lat: 31.4685, lng: 76.2708 },
+      { id: 64, customer: "SHARVAN DEB", firm: "SHARVAN DEB", transport: "", rawLocation: "797112, DIMAPUR, NAGALAND", city: "Dimapur", state: "Nagaland", lat: 25.9091, lng: 93.7266 },
+      { id: 65, customer: "ANSH SONDHIYA", firm: "ANSH SONDHIYA", transport: "", rawLocation: "497442, manendragarh, chattisgarh", city: "Manendragarh", state: "Chhattisgarh", lat: 23.2086, lng: 82.2003 },
+      { id: 66, customer: "ANMOL RAJ", firm: "ANMOL RAJ", transport: "", rawLocation: "201218, GREATER NOIDA, UP", city: "Greater Noida", state: "Uttar Pradesh", lat: 28.4744, lng: 77.5040 },
+      { id: 67, customer: "AMIT DAS", firm: "AMIT DAS", transport: "", rawLocation: "799275, DHALAI, TRIPURA", city: "Dhalai (Kamalpur)", state: "Tripura", lat: 24.1950, lng: 91.8322 },
+      { id: 68, customer: "AVINASH BHARTI", firm: "AVINASH BHARTI", transport: "", rawLocation: "481445, NAGPUR, MP", city: "Lanji (Balaghat)", state: "Madhya Pradesh", lat: 21.5036, lng: 80.5435 },
+      { id: 69, customer: "MAURYAS'S GANRAL STORE", firm: "MAURYAS'S GANRAL STORE", transport: "", rawLocation: "212635, FATEHPUR, UP", city: "Fatehpur (Bindki)", state: "Uttar Pradesh", lat: 26.0357, lng: 80.5750 },
+      { id: 70, customer: "ASHUTOSH KUMAR THAKUR", firm: "ASHUTOSH KUMAR THAKUR", transport: "", rawLocation: "711203, KALKATA, WEST BANGAL", city: "Kolkata (Bally)", state: "West Bengal", lat: 22.6486, lng: 88.3412 },
+      { id: 71, customer: "MGM CHEM TECH INDUSTRIES", firm: "MGM CHEM TECH INDUSTRIES", transport: "", rawLocation: "342013, JODHPUR (RAJ.)", city: "Jodhpur", state: "Rajasthan", lat: 26.2389, lng: 73.0243 },
+      { id: 72, customer: "SAGAR MESHRAM", firm: "SAGAR MESHRAM", transport: "", rawLocation: "481445, BALAGHAT, MP", city: "Balaghat", state: "Madhya Pradesh", lat: 21.8129, lng: 80.1838 },
+      { id: 73, customer: "SOHAM YOGESH WAYKOL", firm: "SOHAM YOGESH WAYKOL", transport: "", rawLocation: "415101, SHAHUWADI, KOLHAPUR", city: "Shahuwadi (Kolhapur)", state: "Maharashtra", lat: 16.9144, lng: 73.9519 },
+      { id: 74, customer: "MANGU RAM", firm: "MANGU RAM", transport: "", rawLocation: "151505, MANSA, PUNJAB", city: "Mansa", state: "Punjab", lat: 29.9995, lng: 75.3937 },
+      { id: 75, customer: "BACHITAR SINGH", firm: "BACHITAR SINGH", transport: "", rawLocation: "140103, KURALI, PUNJAB", city: "Kurali (Mohali)", state: "Punjab", lat: 30.8318, lng: 76.5786 },
+      { id: 76, customer: "TANYA ENTERPRISES", firm: "TANYA ENTERPRISES", transport: "", rawLocation: "201102, UP", city: "Loni (Ghaziabad)", state: "Uttar Pradesh", lat: 28.7525, lng: 77.2882 },
+      { id: 77, customer: "ASHVJEET VIKAS KALE", firm: "ADESH TRADING", transport: "", rawLocation: "431136, AURANGABAD, MH", city: "Chhatrapati Sambhajinagar", state: "Maharashtra", lat: 19.8347, lng: 75.2427 },
+      { id: 78, customer: "VISHAY SHARMA", firm: "VISHAY SHARMA", transport: "", rawLocation: "110052, WAJIPUR", city: "Wazirpur, New Delhi", state: "Delhi", lat: 28.7010, lng: 77.1680 },
+      { id: 79, customer: "FAIZAN MUSTAK MIRZA", firm: "FAIZAN MUSTAK MIRZA", transport: "", rawLocation: "442301, MAHARASHTRA", city: "Hinganghat (Wardha)", state: "Maharashtra", lat: 20.5506, lng: 78.8386 },
+      { id: 80, customer: "MANJEET", firm: "UB TRENDS", transport: "", rawLocation: "124507, BAHADURGARH, HR", city: "Bahadurgarh", state: "Haryana", lat: 28.6924, lng: 76.9355 },
+      { id: 81, customer: "sourav rai", firm: "Sourav Rai", transport: "", rawLocation: "Gorakhpur up", city: "Gorakhpur", state: "Uttar Pradesh", lat: 26.7606, lng: 83.3732 },
+      { id: 82, customer: "AGGARWAL TRADING COMPANY", firm: "AGGARWAL TRADING COMPANY", transport: "", rawLocation: "136128, kurukshetra, pehowa, HR", city: "Pehowa (Kurukshetra)", state: "Haryana", lat: 29.9786, lng: 76.5826 },
+      { id: 83, customer: "SHARM SHARDHA", firm: "SHOPLOOP HUB", transport: "", rawLocation: "ASANSOL, WEST BENGAL", city: "Asansol", state: "West Bengal", lat: 23.6739, lng: 86.9524 },
+      { id: 84, customer: "Momadsalman salim luhar", firm: "Momadsalman salim luhar", transport: "", rawLocation: "370115, kutch, bhuj, gujrat", city: "Bhuj (Kutch)", state: "Gujarat", lat: 23.2420, lng: 69.6669 },
+      { id: 85, customer: "SHRAVAN DEB", firm: "SHRAVAN DEB", transport: "", rawLocation: "797112, DIMAPUR ,NAGALAND", city: "Dimapur", state: "Nagaland", lat: 25.9150, lng: 93.7320 },
+      { id: 86, customer: "SAYAN MANDAL", firm: "SAYAN MANDAL", transport: "", rawLocation: "721305, mendinipur, W.B", city: "Medinipur (Kharagpur)", state: "West Bengal", lat: 22.3460, lng: 87.2320 },
+      { id: 87, customer: "ANKESH", firm: "KRISDHA ENTERPRISE", transport: "", rawLocation: "8433311, SITAMARHI, BIHAR", city: "Sitamarhi", state: "Bihar", lat: 26.5887, lng: 85.4906 },
+      { id: 88, customer: "RAJAT BAKOLIYA", firm: "RAJAT BAKOLIYA", transport: "", rawLocation: "BARMER, RAJ.", city: "Barmer", state: "Rajasthan", lat: 25.7521, lng: 71.3967 },
+      { id: 89, customer: "Harsh morya", firm: "MAURYA'S GENERAL STORE", transport: "Jaipur sethi", rawLocation: "212635, Bindki, UP", city: "Bindki (Fatehpur)", state: "Uttar Pradesh", lat: 26.0400, lng: 80.5800 },
+      { id: 90, customer: "Shrankhla", firm: "KEEBO RETAIL", transport: "VRL", rawLocation: "121004, ballabghar, faridabad, HR", city: "Ballabhgarh (Faridabad)", state: "Haryana", lat: 28.3383, lng: 77.3210 },
+      { id: 91, customer: "RAM NIWAS", firm: "RAM NIWAS", transport: "Jaipur sethi", rawLocation: "204101, Hathras, UP", city: "Hathras", state: "Uttar Pradesh", lat: 27.5980, lng: 78.0520 },
+      { id: 92, customer: "CLEAN GO SOLUTION", firm: "CLEAN GO SOLUTION", transport: "Jaipur sethi", rawLocation: "205001, Mainpuri, UP", city: "Mainpuri", state: "Uttar Pradesh", lat: 27.2350, lng: 79.0300 },
+      { id: 93, customer: "ANISH KUMAR", firm: "ANISH KUMAR", transport: "AZAD", rawLocation: "847424, Madhubani, bihar", city: "Madhubani", state: "Bihar", lat: 26.2650, lng: 86.2780 },
+      { id: 94, customer: "TARUN TRADERS", firm: "TARUN TRADERS", transport: "VRL", rawLocation: "474001, Gwaliar, MP", city: "Gwalior", state: "Madhya Pradesh", lat: 26.2183, lng: 78.1828 },
+      { id: 95, customer: "ANSH SONDHIYA", firm: "ANSH SONDHIYA", transport: "TCI", rawLocation: "497001, Ambikapur, chhattisgarh", city: "Ambikapur", state: "Chhattisgarh", lat: 23.1250, lng: 83.2050 },
+      { id: 96, customer: "ANJORA", firm: "ANJORA", transport: "", rawLocation: "885103, HISAU, NAWADA BIHAR", city: "Hisua (Nawada)", state: "Bihar", lat: 24.8329, lng: 85.4182 },
+      { id: 97, customer: "SHINSUTRA", firm: "SHINSUTRA", transport: "", rawLocation: "Haryana (State Code 06)", city: "Sonipat / NCR", state: "Haryana", lat: 28.9931, lng: 77.0151 }
+    ];
+
+    // Initialize Map centered on India
+    const map = L.map("map", {
+      center: [23.8, 80.0],
+      zoom: 5,
+      minZoom: 4
+    });
+
+    // Dark CartoDB Basemap
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: "&copy; OpenStreetMap &copy; CARTO",
+      subdomains: "abcd",
+      maxZoom: 19
+    }).addTo(map);
+
+    // Layer Groups
+    const markersLayer = L.layerGroup().addTo(map);
+    const linesLayer = L.layerGroup().addTo(map);
+    let showLines = true;
+    const markerMap = {};
+
+    // Add Jaipur HQ Pin
+    const hqIcon = L.divIcon({
+      className: "",
+      html: '<div class="hq-pin"></div>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10]
+    });
+
+    L.marker([JAIPUR_HQ.lat, JAIPUR_HQ.lng], { icon: hqIcon })
+      .addTo(map)
+      .bindPopup("<b>Khushali Chemicals HQ</b><br/>Galta Gate, Jaipur, Rajasthan");
+
+    // Populate State Filter Dropdown
+    const states = [...new Set(deliveries.map(d => d.state))].sort();
+    document.getElementById("stateCount").textContent = states.length;
+    const stateSelect = document.getElementById("stateSelect");
+    states.forEach(st => {
+      const count = deliveries.filter(d => d.state === st).length;
+      const opt = document.createElement("option");
+      opt.value = st;
+      opt.textContent = `${st} (${count})`;
+      stateSelect.appendChild(opt);
+    });
+
+    // Render Markers and Sidebar Cards
+    function renderData(list) {
+      markersLayer.clearLayers();
+      linesLayer.clearLayers();
+      const container = document.getElementById("entriesList");
+      container.innerHTML = "";
+      document.getElementById("totalCount").textContent = list.length;
+
+      const pinIcon = L.divIcon({
+        className: "",
+        html: '<div class="delivery-pin"></div>',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7]
+      });
+
+      list.forEach(item => {
+        // Marker
+        const marker = L.marker([item.lat, item.lng], { icon: pinIcon });
+        const transportHtml = item.transport
+          ? `<br/><span><b>Transport:</b> ${item.transport}</span>`
+          : "";
+
+        marker.bindPopup(
+          `<div style="min-width:180px;">
+            <div style="font-weight:700;color:#10b981;font-size:0.95rem;margin-bottom:3px;">${item.firm}</div>
+            <div style="font-size:0.8rem;color:#cbd5e1;"><b>Customer:</b> ${item.customer}</div>
+            <div style="font-size:0.8rem;color:#cbd5e1;"><b>Location:</b> ${item.rawLocation}</div>
+            <div style="font-size:0.8rem;color:#cbd5e1;"><b>State:</b> ${item.state}${transportHtml}</div>
+          </div>`
+        );
+        markersLayer.addLayer(marker);
+        markerMap[item.id] = marker;
+
+        // Supply Line from Jaipur HQ
+        if (showLines) {
+          const line = L.polyline(
+            [
+              [JAIPUR_HQ.lat, JAIPUR_HQ.lng],
+              [item.lat, item.lng]
+            ],
+            {
+              color: "#10b981",
+              weight: 1.2,
+              opacity: 0.35,
+              dashArray: "4, 6"
+            }
+          );
+          linesLayer.addLayer(line);
+        }
+
+        // Sidebar Card
+        const card = document.createElement("div");
+        card.className = "entry-card";
+        card.id = `card-${item.id}`;
+        card.innerHTML = `
+          <div class="entry-top">
+            <span class="firm-name">#${item.id} ${item.firm}</span>
+            <span class="state-tag">${item.state}</span>
+          </div>
+          <div class="customer-sub">Customer: ${item.customer}</div>
+          <div class="entry-meta">
+            <span>📍 ${item.rawLocation}</span>
+            ${item.transport ? `<span class="transport-badge">🚚 ${item.transport}</span>` : ""}
+          </div>
+        `;
+        card.onclick = () => focusEntry(item);
+        container.appendChild(card);
+      });
+    }
+
+    function focusEntry(item) {
+      document.querySelectorAll(".entry-card").forEach(c => c.classList.remove("active"));
+      const activeCard = document.getElementById(`card-${item.id}`);
+      if (activeCard) activeCard.classList.add("active");
+
+      map.flyTo([item.lat, item.lng], 9, { duration: 1.1 });
+      const marker = markerMap[item.id];
+      if (marker) marker.openPopup();
+    }
+
+    function filterEntries() {
+      const q = document.getElementById("searchInput").value.toLowerCase().trim();
+      const selectedState = document.getElementById("stateSelect").value;
+
+      const filtered = deliveries.filter(item => {
+        const matchesState = selectedState === "ALL" || item.state === selectedState;
+        const matchesQuery =
+          item.customer.toLowerCase().includes(q) ||
+          item.firm.toLowerCase().includes(q) ||
+          item.rawLocation.toLowerCase().includes(q) ||
+          item.city.toLowerCase().includes(q) ||
+          item.state.toLowerCase().includes(q) ||
+          item.transport.toLowerCase().includes(q);
+        return matchesState && matchesQuery;
+      });
+
+      renderData(filtered);
+    }
+
+    function toggleSupplyLines() {
+      showLines = !showLines;
+      document.getElementById("toggleLinesBtn").textContent = showLines
+        ? "Hide Supply Lines"
+        : "Show Supply Lines";
+      filterEntries();
+    }
+
+    function resetMapView() {
+      map.flyTo([23.8, 80.0], 5, { duration: 1 });
+    }
+
+    // Initial Render
+    renderData(deliveries);
+  </script>
+</body>
+</html>
